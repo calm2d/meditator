@@ -1,5 +1,7 @@
 (in-package #:calm)
 
+(defparameter *meditator-version* "0.0.1")
+
 (setf *calm-width* 600)
 (setf *calm-height* 500)
 
