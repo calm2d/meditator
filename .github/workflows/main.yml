@@ -1,0 +1,179 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  push:
+    tags:
+      - "*.*.*"
+      - "test-*"
+
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+
+  osx-build:
+    # The type of runner that the job will run on
+    runs-on: macos-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      # Runs a set of commands using the runners shell
+      - name: Install CALM
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/VitoVan/calm/$(git describe --tags --abbrev=0)/scripts/install.sh)"
+
+      - name: Dist CALM APP
+        run: |
+          pwd
+          export DEFAULT_PWD=$(pwd)
+          cat ~/.bash_profile
+          source ~/.bash_profile
+          calm dist && mv dist calm-app
+          zip -r -9 calm-meditator-macos.zip ./calm-app && rm -rf ./calm-app
+
+      - name: Dist CALM APP with-canvas
+        run: |
+          pwd
+          export DEFAULT_PWD=$(pwd)
+          cat ~/.bash_profile
+          source ~/.bash_profile
+          calm dist --with-canvas && mv dist calm-app
+          zip -r -9 calm-meditator-macos-with-canvas.zip ./calm-app && rm -rf ./calm-app
+
+      - name: GH Release
+        uses: softprops/action-gh-release@v0.1.14
+        with:
+          files: |
+            calm-*.zip
+
+
+  # This workflow contains a single job called "build"
+  linux-build-fedora:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    container:
+      image: fedora
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+
+      # Runs a set of commands using the runners shell
+      - name: Install Dependencies
+        run: |
+          dnf -y groupinstall "Development Tools"
+          sudo dnf install git sbcl libzstd-devel capstone-devel wget  bzip2 tar -y
+
+      # Prepare
+      - name: Prepare SBCL (higher version > 2.2.5 with compression)
+        run: |
+          wget http://downloads.sourceforge.net/project/sbcl/sbcl/2.2.7/sbcl-2.2.7-source.tar.bz2
+          bzip2 -cd sbcl-2.2.7-source.tar.bz2 | tar xvf -
+          cd sbcl-2.2.7
+          sh make.sh --with-fancy --with-sb-core-compression
+          sudo sh install.sh
+
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # Runs a set of commands using the runners shell
+      - name: Install CALM
+        run: |
+          git config --global --add safe.directory /__w/calm/calm
+          pwd
+          git describe --tags --abbrev=0
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/VitoVan/calm/$(git describe --tags --abbrev=0)/scripts/install.sh)"
+
+      - name: Dist CALM APP
+        run: |
+          pwd
+          export DEFAULT_PWD=$(pwd)
+          cat ~/.bash_profile
+          source ~/.bash_profile
+          calm dist && mv dist calm-app
+          zip -r -9 calm-meditator-linux.zip ./calm-app && rm -rf ./calm-app
+
+      - name: Dist CALM APP with-canvas
+        run: |
+          pwd
+          export DEFAULT_PWD=$(pwd)
+          cat ~/.bash_profile
+          source ~/.bash_profile
+          calm dist && mv dist calm-app
+          zip -r -9 calm-meditator-linux-with-canvas.zip ./calm-app && rm -rf ./calm-app
+
+
+      - name: GH Release
+        uses: softprops/action-gh-release@v0.1.14
+        with:
+          files: |
+            calm-*.zip
+
+
+  windows-build:
+    # The type of runner that the job will run on
+    runs-on: windows-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          location: D:\
+          release: true
+          update: false
+          install: >-
+            unzip
+            p7zip
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-zstd
+            make
+            diffutils
+            git
+
+      - name: Install Host SBCL
+        shell: msys2 {0}
+        run: |
+          wget http://prdownloads.sourceforge.net/sbcl/sbcl-2.2.7-x86-64-windows-binary.msi
+          7z x sbcl-2.2.7-x86-64-windows-binary.msi -Osbcl-2.2.7-bin
+          wget http://downloads.sourceforge.net/project/sbcl/sbcl/2.2.7/sbcl-2.2.7-source.tar.bz2
+          bzip2 -cd sbcl-2.2.7-source.tar.bz2 | tar xvf -
+
+      - name: Prepare SBCL (higher version > 2.2.5 with compression)
+        shell: msys2 {0}
+        run: |
+          cd sbcl-2.2.7
+          PATH=$PATH:"../sbcl-2.2.7-bin/" SBCL_HOME="../sbcl-2.2.7-bin/" sh make.sh --xc-host='sbcl --lose-on-corruption --disable-ldb --disable-debugger' --with-fancy --with-sb-core-compression
+          sh install.sh
+          echo "SBCL_HOME=C:\Program Files\sbcl\lib\sbcl" >> $GITHUB_ENV
+          echo "C:\Program Files\sbcl\bin" >> $GITHUB_PATH
+
+      # Runs a set of commands using the runners shell
+      - name: Install CALM
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString("https://raw.githubusercontent.com/VitoVan/calm/$(git describe --tags --abbrev=0)/scripts/install.ps1"))
+
+      - name: Dist CALM APP
+        run: |
+          C:\msys64\msys2_shell.cmd -defterm -here -no-start -mingw64 -c 'source ~/.bash_profile && calm dist && mv dist calm-app && zip -r -9 calm-meditator-windows.zip ./calm-app && rm -rf ./calm-app'
+
+      - name: Dist CALM APP with-canvas
+        run: |
+          C:\msys64\msys2_shell.cmd -defterm -here -no-start -mingw64 -c 'source ~/.bash_profile && calm dist --with-canvas && mv dist calm-app && zip -r -9 calm-meditator-windows-with-canvas.zip ./calm-app && rm -rf ./calm-app'
+
+      - name: GH Release
+        uses: softprops/action-gh-release@v0.1.14
+        with:
+          prerelease: true
+          files: |
+            calm-*.zip
