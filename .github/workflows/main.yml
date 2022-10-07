@@ -35,14 +35,14 @@ jobs:
           source ~/.bash_profile
           calm dist && mv dist calm-app
           ls -lah
-          mv bowl.wav ./calm-app/
+          cp bowl.wav ./calm-app/
           zip -r -9 calm-meditator-macos.zip ./calm-app && rm -rf ./calm-app
 
       - name: Dist CALM APP with-canvas
         run: |
           source ~/.bash_profile
           calm dist --with-canvas && mv dist calm-app
-          mv bowl.wav ./calm-app/
+          cp bowl.wav ./calm-app/
           zip -r -9 calm-meditator-macos-with-canvas.zip ./calm-app && rm -rf ./calm-app
 
       - name: GH Release
@@ -100,14 +100,14 @@ jobs:
           export DEFAULT_PWD=$(pwd)
           source ~/.bash_profile
           calm dist && mv dist calm-app
-          mv bowl.wav ./calm-app/
+          cp bowl.wav ./calm-app/
           zip -r -9 calm-meditator-linux.zip ./calm-app && rm -rf ./calm-app
 
       - name: Dist CALM APP with-canvas
         run: |
           source ~/.bash_profile
           calm dist && mv dist calm-app
-          mv bowl.wav ./calm-app/
+          cp bowl.wav ./calm-app/
           zip -r -9 calm-meditator-linux-with-canvas.zip ./calm-app && rm -rf ./calm-app
 
 
@@ -165,11 +165,11 @@ jobs:
 
       - name: Dist CALM APP
         run: |
-          C:\msys64\msys2_shell.cmd -defterm -here -no-start -mingw64 -c 'source ~/.bash_profile && calm dist && mv dist calm-app && mv bowl.wav ./calm-app/ && zip -r -9 calm-meditator-windows.zip ./calm-app && rm -rf ./calm-app'
+          C:\msys64\msys2_shell.cmd -defterm -here -no-start -mingw64 -c 'source ~/.bash_profile && calm dist && mv dist calm-app && cp bowl.wav ./calm-app/ && zip -r -9 calm-meditator-windows.zip ./calm-app && rm -rf ./calm-app'
 
       - name: Dist CALM APP with-canvas
         run: |
-          C:\msys64\msys2_shell.cmd -defterm -here -no-start -mingw64 -c 'source ~/.bash_profile && calm dist --with-canvas && mv dist calm-app && mv bowl.wav ./calm-app/ && zip -r -9 calm-meditator-windows-with-canvas.zip ./calm-app && rm -rf ./calm-app'
+          C:\msys64\msys2_shell.cmd -defterm -here -no-start -mingw64 -c 'source ~/.bash_profile && calm dist --with-canvas && mv dist calm-app && cp bowl.wav ./calm-app/ && zip -r -9 calm-meditator-windows-with-canvas.zip ./calm-app && rm -rf ./calm-app'
 
       - name: GH Release
         uses: softprops/action-gh-release@v0.1.14
